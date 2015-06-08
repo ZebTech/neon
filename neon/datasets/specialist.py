@@ -22,9 +22,9 @@ from neon.datasets import (
     MNIST,
 )
 from neon.backends.cpu import CPU
-from model_layers import (
-    load_cifar100_train32_test50,
-)
+# from model_layers import (
+    # load_cifar100_train32_test50,
+#)
 
 CURR_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -105,7 +105,7 @@ def soft_sum_cm(targets, preds):
 
 def soft_sum_pred_cm(targets, preds):
     """
-        Returns a confusion matrix, where the the content of a cell is the sum
+        Returns a confusion matrix, where the content of a cell is the sum
         of prediction probabilities, only when this class was predicted.
     """
     N = max(targets) + 1
@@ -252,8 +252,11 @@ class SpecialistDataset(Dataset):
             nb_clusters: total number of clusters.
             cluster: which cluster to use for this current experiment.
         """
-        self.dataset = self.datasets[dataset](
+        self.repo_path = repo_path
+        dataset = self.datasets[dataset](
             repo_path=self.repo_path, **kwargs)
+        self.__dict__ = dataset.__dict__
+        self.dataset = dataset
         self.experiment = experiment
         self.nb_clusters = nb_clusters
         self.cluster = cluster
@@ -261,21 +264,13 @@ class SpecialistDataset(Dataset):
         self.clustering = self.clustering_methods[clustering]
         self.inferences_path = inferences_path
 
-    def initialize(self):
-        return self.dataset.initialize(self)
-
-    def fetch_dataset(self, save_dir):
-        return self.dataset.fetch_dataset(save_dir)
-
-    def load_file(self, filename, nclasses):
-        return self.dataset.load_file(filename, nclasses)
-
     def load(self, backend, experiment):
         self.dataset.load(backend, experiment)
         train_probs, test_probs = load_inferences(
             path=self.inferences_path, name=self.experiment)
         train_targets, test_targets = load_inferences(
             path=self.inferences_path, name=self.experiment)
+        test_targets = np.argmax(test_targets, axis=1)
         cm = self.confusion_matrix(test_targets, test_probs)
         cm = clean_cm(cm)
         friendliness = unfriendliness_matrix(cm)
@@ -296,12 +291,12 @@ class SpecialistDataset(Dataset):
                 new_targets.append(t)
         self.dataset.inputs['test'] = np.array(new_inputs)
         self.dataset.targets['test'] = np.array(new_targets)
-        self.dataset.format()
         self.inputs = self.dataset.inputs
         self.targets = self.dataset.targets
+        #import pdb; pdb.set_trace()
 
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
     # model = load_cifar100_train32_test50()
     # data, par = load_data()
     # targets = data.targets['test']
