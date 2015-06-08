@@ -277,23 +277,29 @@ class SpecialistDataset(Dataset):
         cluster = self.clustering(friendliness, self.nb_clusters)[self.cluster]
         new_inputs = []
         new_targets = []
-        for i, t in izip(self.dataset.inputs['train'], self.dataset.targets['train']):
-            if np.argmax(t) in cluster:
-                new_inputs.append(i)
-                new_targets.append(t)
+        for bi, bt in izip(self.dataset.inputs['train'], self.dataset.targets['train']):
+            bi = bi.raw.transpose()
+            bt = bt.raw.transpose()
+            for i, t in izip(bi, bt):
+                if np.argmax(t) in cluster:
+                    new_inputs.append(i)
+                    new_targets.append(t)
         self.dataset.inputs['train'] = np.array(new_inputs)
         self.dataset.targets['train'] = np.array(new_targets)
         new_inputs = []
         new_targets = []
-        for i, t in izip(self.dataset.inputs['test'], self.dataset.targets['test']):
-            if np.argmax(t) in cluster:
-                new_inputs.append(i)
-                new_targets.append(t)
+        for bi, bt in izip(self.dataset.inputs['test'], self.dataset.targets['test']):
+            bi = bi.raw.transpose()
+            bt = bt.raw.transpose()
+            for i, t in izip(bi, bt):
+                if np.argmax(t) in cluster:
+                    new_inputs.append(i)
+                    new_targets.append(t)
         self.dataset.inputs['test'] = np.array(new_inputs)
         self.dataset.targets['test'] = np.array(new_targets)
         self.inputs = self.dataset.inputs
         self.targets = self.dataset.targets
-        #import pdb; pdb.set_trace()
+        self.format()
 
 
 # if __name__ == '__main__':
