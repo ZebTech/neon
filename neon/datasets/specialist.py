@@ -29,13 +29,13 @@ from model_layers import (
 CURR_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-def load_targets(name):
-    f = open(CURR_DIR + '/saved_experiments/' +
+def load_targets(path, name):
+    f = open(path + '/saved_experiments/' +
              name + '/train-targets.pkl', 'rb')
     train = pk.load(f)
     train = np.argmax(train, axis=1)
     f.close()
-    f = open(CURR_DIR + '/saved_experiments/' +
+    f = open(path + '/saved_experiments/' +
              name + '/test-targets.pkl', 'rb')
     test = pk.load(f)
     test = np.argmax(test, axis=1)
@@ -43,12 +43,12 @@ def load_targets(name):
     return (train, test)
 
 
-def load_inferences(name):
-    f = open(CURR_DIR + '/saved_experiments/' +
+def load_inferences(path, name):
+    f = open(path + '/saved_experiments/' +
              name + '/train-inference.pkl', 'rb')
     train = pk.load(f)
     f.close()
-    f = open(CURR_DIR + '/saved_experiments/' +
+    f = open(path + '/saved_experiments/' +
              name + '/test-inference.pkl', 'rb')
     test = pk.load(f)
     f.close()
@@ -244,7 +244,7 @@ class SpecialistDataset(Dataset):
 
     def __init__(self, dataset='', experiment='', nb_clusters=5, cluster=0,
                  confusion_matrix='soft_sum_pred_cm', clustering='greedy',
-                 repo_path='~/data', **kwargs):
+                 repo_path='~/data', inferences_path='~/inferences', **kwargs):
         """
             dataset: which dataset to sub-set.
             experiment: on which experiment should the clustering process be
@@ -259,6 +259,7 @@ class SpecialistDataset(Dataset):
         self.cluster = cluster
         self.confusion_matrix = self.cm_types[confusion_matrix]
         self.clustering = self.clustering_methods[clustering]
+        self.inferences_path = inferences_path
 
     def initialize(self):
         return self.dataset.initialize(self)
@@ -271,8 +272,10 @@ class SpecialistDataset(Dataset):
 
     def load(self, backend, experiment):
         self.dataset.load(backend, experiment)
-        train_probs, test_probs = load_inferences(name=self.experiment)
-        train_targets, test_targets = load_inferences(name=self.experiment)
+        train_probs, test_probs = load_inferences(
+            path=self.inferences_path, name=self.experiment)
+        train_targets, test_targets = load_inferences(
+            path=self.inferences_path, name=self.experiment)
         cm = self.confusion_matrix(test_targets, test_probs)
         cm = clean_cm(cm)
         friendliness = unfriendliness_matrix(cm)
@@ -305,7 +308,7 @@ if __name__ == '__main__':
     # pred_probs = model.predict_proba(data.inputs['test'])
 
     # experiment = '5_test50_train33_156epochs'
-    #experiment = '5_test45_train22_740epochs'
+    # experiment = '5_test45_train22_740epochs'
     # experiment = '4_test22_train14_74epochs'
     # train_pred_probs, test_pred_probs = load_inferences(name=experiment)
     # train_targets, test_targets = load_targets(name=experiment)
@@ -322,7 +325,7 @@ if __name__ == '__main__':
     # plot_confusion_matrix(cm_soft, title=experiment)
     # plot_confusion_matrix(cm_categorical, title=experiment)
 
-    #sdata = SpecialistDataset(dataset='cifar100', experiment=experiment)
+    # sdata = SpecialistDataset(dataset='cifar100', experiment=experiment)
 
     # To try when generating sets:
     # - overlapping vs no-overlapping
