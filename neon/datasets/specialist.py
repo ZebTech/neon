@@ -224,11 +224,6 @@ class SpecialistDataset(Dataset):
          Especially usefull for specialists.
     """
 
-    datasets = {
-        'cifar10': CIFAR10,
-        'cifar100': CIFAR100,
-        'mnist': MNIST,
-    }
     clustering_methods = {
         'greedy': greedy_clustering,
         'overlap_greedy': greedy_clustering_overlapping,
@@ -242,20 +237,18 @@ class SpecialistDataset(Dataset):
         'soft_sum_n_pred': soft_sum_n_pred_cm,
     }
 
-    def __init__(self, dataset='', experiment='', nb_clusters=5, cluster=0,
+    def __init__(self, dataset=None, experiment='', nb_clusters=5, cluster=0,
                  confusion_matrix='soft_sum_pred_cm', clustering='greedy',
                  repo_path='~/data', inferences_path='~/inferences',
                  full_predictions=False, **kwargs):
         """
-            dataset: which dataset to sub-set.
+            dataset: which dataset to sub-set, should be an Dataset() instance.
             experiment: on which experiment should the clustering process be
                         based, and the inferences loaded.
             nb_clusters: total number of clusters.
             cluster: which cluster to use for this current experiment.
         """
         self.repo_path = repo_path
-        dataset = self.datasets[dataset](
-            repo_path=self.repo_path, **kwargs)
         self.__dict__ = dataset.__dict__
         self.dataset = dataset
         self.experiment = experiment
