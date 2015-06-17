@@ -17,9 +17,9 @@
 
 !obj:experiments.FitPredictErrorExperiment {
 
-  dataset: &ds !obj:datasets.CIFAR10 {
+  dataset: &ds !obj:datasets.CIFAR100 {
     repo_path: '~/data',
-    sample_pct: 10,
+    sample_pct: 100,
   },
 
   metrics: {
@@ -54,8 +54,8 @@
   # CNN model specification
   # essentially a multi-layer perceptron with convolutional and pooling layers
   model: !obj:models.MLP {
-    num_epochs: 5,
-    batch_size: &bs 128,
+    num_epochs: 20,
+    batch_size: &bs 256,
     layers: [
       &datalayer !obj:layers.DataLayer {
         name: d0,
@@ -67,7 +67,7 @@
         name: layer1,
         lrule_init: *gdm,
         weight_init: *wt_init0,
-        nofm: 16,
+        nofm: 128,
         fshape: [5, 5],
       },
       !obj:layers.PoolingLayer {
@@ -85,7 +85,7 @@
       !obj:layers.ConvLayer {
         name: layer4,
         lrule_init: *gdm,
-        nofm: 32,
+        nofm: 160,
         fshape: [5, 5],
         weight_init: *wt_init0,
       },
@@ -108,11 +108,19 @@
         weight_init: *wt_init,
         activation: !obj:transforms.RectLin {},
       },
+
+      !obj:layers.FCLayer {
+        name: layer6,
+        nout: 500,
+        lrule_init: *gdm,
+        weight_init: *wt_init,
+        activation: !obj:transforms.RectLin {},
+      },
       &lastlayer !obj:layers.FCLayer {
         name: output,
         lrule_init: *gdm,
         weight_init: *wt_init,
-        nout: 10,
+        nout: 100,
         activation: !obj:transforms.Logistic {},
       },
       &costlayer !obj:layers.CostLayer {

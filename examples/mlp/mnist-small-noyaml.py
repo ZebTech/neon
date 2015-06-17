@@ -42,7 +42,7 @@ def create_model(nin):
 
 def run():
     model = create_model(nin=784)
-    backend = gen_backend(rng_seed=0)
+    backend = gen_backend(rng_seed=0, gpu='cudanet')
     dataset = MNIST(repo_path='~/data/')
     experiment = FitPredictErrorExperiment(model=model,
                                            backend=backend,
