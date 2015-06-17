@@ -17,6 +17,20 @@ Experiment in which a model is trained (parameters learned), then performance
 is evaluated on the predictions made.
 """
 
+"""
+    TODO:
+        - Given a number of specialists, automatically cluster them (could be given),
+        copy a model and train it, possibly re-name the targets for specialists,
+        predict for each specialists (convert back to total number of classes), and
+        merge the predictions together.
+        - Given parameters include:
+            - nb_spec = nb_clusters
+            - clustering method
+            - confusion matrix method
+            - net definition for specialists
+            - experiment name for loading/unloading
+"""
+
 import logging
 import os
 
