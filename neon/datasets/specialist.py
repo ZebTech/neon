@@ -217,6 +217,9 @@ def greedy_clustering_overlapping(friends, N):
     return clusters
 
 
+def to_one_hot(i, n_classes):
+    return np.array([0 for x in xrange(n_classes) if x != i else 1])
+
 class SpecialistDataset(Dataset):
 
     """
@@ -270,6 +273,8 @@ class SpecialistDataset(Dataset):
         cm = clean_cm(cm)
         friendliness = unfriendliness_matrix(cm)
         cluster = self.clustering(friendliness, self.nb_clusters)[self.cluster]
+        cluster = list(cluster)
+        n_classes = len(cluster)
         new_inputs = []
         new_targets = []
         for bi, bt in izip(self.dataset.inputs['train'], self.dataset.targets['train']):
@@ -277,8 +282,10 @@ class SpecialistDataset(Dataset):
             bt = bt.asnumpyarray().transpose()
             for i, t in izip(bi, bt):
                 if np.argmax(t) in cluster:
+                    clss = np.argmax(t)
+                    clss = cluster.index(clss)
                     new_inputs.append(i)
-                    new_targets.append(t)
+                    new_targets.append(to_one_hot(clss, n_classes))
         self.dataset.inputs['train'] = np.array(new_inputs)
         self.dataset.targets['train'] = np.array(new_targets)
         new_inputs = []
@@ -288,8 +295,10 @@ class SpecialistDataset(Dataset):
             bt = bt.asnumpyarray().transpose()
             for i, t in izip(bi, bt):
                 if np.argmax(t) in cluster or self.full_predictions:
+                    clss = np.argmax(t)
+                    clss = cluster.index(clss)
                     new_inputs.append(i)
-                    new_targets.append(t)
+                    new_targets.append(to_one_hot(clss, n_classes))
         self.dataset.inputs['test'] = np.array(new_inputs)
         self.dataset.targets['test'] = np.array(new_targets)
         self.inputs = self.dataset.inputs
