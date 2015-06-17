@@ -2,10 +2,6 @@
 # -*- coding: utf-8 -*-
 
 
-# TODO:
-#: Import cudanet backend
-#: Import Datapar and try it
-
 import os
 import numpy as np
 import cPickle as pk
@@ -22,9 +18,6 @@ from neon.datasets import (
     MNIST,
 )
 from neon.backends.cpu import CPU
-# from model_layers import (
-    # load_cifar100_train32_test50,
-#)
 
 CURR_DIR = os.path.dirname(os.path.abspath(__file__))
 
