@@ -8,7 +8,7 @@ import cPickle as pk
 from itertools import izip
 
 from sklearn.metrics import confusion_matrix
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 from neon.backends.par import NoPar
 from neon.datasets.dataset import Dataset
@@ -64,18 +64,18 @@ def clean_cm(cm):
     return cm
 
 
-def plot_confusion_matrix(cm, title='Confusion matrix', cmap=plt.cm.Blues):
-    plt.imshow(cm, interpolation='nearest', cmap=cmap)
-    plt.title(title)
-    plt.colorbar()
-    tick_marks = np.arange(len(cm))
-    plt.xticks(tick_marks, xrange(len(cm)), rotation=45)
-    plt.yticks(tick_marks, xrange(len(cm)))
-    plt.tight_layout()
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
-    plt.show()
-    plt.close()
+#def plot_confusion_matrix(cm, title='Confusion matrix', cmap=plt.cm.Blues):
+    #plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    #plt.title(title)
+    #plt.colorbar()
+    #tick_marks = np.arange(len(cm))
+    #plt.xticks(tick_marks, xrange(len(cm)), rotation=45)
+    #plt.yticks(tick_marks, xrange(len(cm)))
+    #plt.tight_layout()
+    #plt.ylabel('True label')
+    #plt.xlabel('Predicted label')
+    #plt.show()
+    #plt.close()
 
 
 def soft_sum_cm(targets, preds):
