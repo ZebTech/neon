@@ -39,6 +39,7 @@ class MLP(Model):
         opt_param(self, ['accumulate'], False)
         opt_param(self, ['reuse_deltas'], True)
         opt_param(self, ['timing_plots'], False)
+        opt_param(self, ['serialize_schedule'])
 
     def link(self, initlayer=None):
         for ll, pl in zip(self.layers, [initlayer] + self.layers[:-1]):
@@ -109,12 +110,14 @@ class MLP(Model):
             return
         if partial is True:
             assert self.step_print != 0
-            logger.info('%d.%d training error: %0.5f', self.epochs_complete,
-                        num_batches / self.step_print - 1, rederr)
+            logger.info('%d:%d training error: %0.5f', self.epochs_complete,
+                        num_batches / self.step_print,
+                        rederr)
         else:
             errorval = rederr / num_batches
             logger.info('epoch: %d, training error: %0.5f',
-                        self.epochs_complete, errorval)
+                        self.epochs_complete,
+                        errorval)
 
     def print_test_error(self, setname, misclass, nrecs):
         redmisclass = self.backend.reduce_tensor(misclass)
@@ -155,10 +158,11 @@ class MLP(Model):
                 self.backend.add(error, self.cost_layer.get_cost(), error)
                 self.backend.end(Block.minibatch, mb_id)
                 mb_id += 1
+            self.epochs_complete += 1
             self.print_training_error(error, self.data_layer.num_batches)
             self.print_layers(debug=True)
-            self.backend.end(Block.epoch, self.epochs_complete)
-            self.epochs_complete += 1
+            self.backend.end(Block.epoch, self.epochs_complete - 1)
+            self.save_snapshot()
         self.data_layer.cleanup()
 
     def set_train_mode(self, mode):
@@ -237,8 +241,8 @@ class MLP(Model):
                                                               setname):
             start = batch * self.batch_size
             end = start + self.batch_size
-            outputs[:, start:end] = self.get_classifier_output()
-            reference[:, start:end] = self.cost_layer.get_reference()
+            outputs[:, start:end] = batch_preds
+            reference[:, start:end] = batch_refs
             batch += 1
 
         return outputs, reference

@@ -95,6 +95,16 @@ class Dataset(object):
         """
         pass
 
+    def process_result(self, result):
+        """
+        Accept and process results of running inference.
+
+        Arguments:
+            result (ndarray): Array containing predictions obtained by
+                    processing a minibatch of input data.
+        """
+        pass
+
     def download_to_repo(self, url, repo_path):
         """
         Fetches the dataset to a local repository for future use.
@@ -192,7 +202,7 @@ class Dataset(object):
             self.inputs['train'] = self.inputs['train'][train_idcs]
             self.targets['train'] = self.targets['train'][train_idcs]
 
-    def transpose_batches(self, data):
+    def transpose_batches(self, data, dtype):
         """
         Transpose and distribute each minibatch within a dataset.
 
@@ -207,16 +217,16 @@ class Dataset(object):
         if data.shape[0] % bs != 0:
             logger.warning('Incompatible batch size. Discarding %d samples...',
                            data.shape[0] % bs)
-        nbatches = data.shape[0] / bs
+        nbatches = data.shape[0] // bs
         batchwise = []
         for batch in range(nbatches):
             batchdata = np.empty((data.shape[1], bs))
             batchdata[...] = data[batch * bs:(batch + 1) * bs].transpose()
-            dev_batchdata = self.backend.distribute(batchdata)
+            dev_batchdata = self.backend.distribute(batchdata, dtype)
             batchwise.append(dev_batchdata)
         return batchwise
 
-    def format(self):
+    def format(self, dtype=np.float32):
         """
         Transforms the loaded data into the format expected by the
         backend. If a hardware accelerator device is being used,
@@ -227,7 +237,7 @@ class Dataset(object):
             for key in dataset:
                 item = dataset[key]
                 if item is not None:
-                    dataset[key] = self.transpose_batches(item)
+                    dataset[key] = self.transpose_batches(item, dtype)
 
     def get_batch(self, data, batch):
         """

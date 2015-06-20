@@ -53,9 +53,10 @@ class FitPredictErrorExperiment(FitExperiment):
     parameters (rather than learning from scratch).  The same may also apply to
     the datasets specified.
 
-    Kwargs:
+    Keyword Args:
         backend (neon.backends.Backend): The backend to associate with the
-                                            datasets to use in this experiment
+                                         datasets to use in this experiment
+
     TODO:
         add other params
     """
@@ -170,7 +171,7 @@ class FitPredictErrorExperiment(FitExperiment):
         while True:
             try:
                 result = self.model.predict_live()
-                logger.info(result)
+                self.dataset.process_result(result.asnumpyarray())
             except KeyboardInterrupt:
                 logger.info('Execution interrupted.')
                 self.dataset.unload()

@@ -263,6 +263,7 @@ Gradient Descent
    neon.optimizers.gradient_descent.GradientDescentMomentum
    neon.optimizers.gradient_descent.GradientDescentMomentumWeightDecay
    neon.optimizers.adadelta.AdaDelta
+   neon.optimizers.rmsprop.RMSProp
 
 Parameter Related
 =================
@@ -375,7 +376,7 @@ CIFAR10
    neon.datasets.cifar10.CIFAR10
 
 CIFAR100
--------
+--------
 
 .. autosummary::
    :toctree: generated/

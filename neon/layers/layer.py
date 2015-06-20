@@ -27,8 +27,9 @@ from neon.optimizers.gradient_descent import (GradientDescent,
                                               GradientDescentMomentum,
     GradientDescentMomentumWeightDecay)  # noqa
 from neon.optimizers.adadelta import AdaDelta
+from neon.optimizers.rmsprop import RMSProp
 from neon.util.compat import range
-from neon.util.param import req_param, opt_param
+from neon.util.param import req_param, opt_param, ensure_dtype
 from neon.util.defaults import default_weight_init, default_lrule_init
 from neon.util.persist import YAMLable
 from neon.transforms.batch_norm import BatchNorm
@@ -63,11 +64,11 @@ class Layer(YAMLable):
         opt_param(self, ['prev_names'], [])
 
         opt_param(self, ['backend_type'], 'np.float32')
-        if self.backend_type == 'np.float16':
-            logger.info("Setting layer dtype to float16")
-            for some_type in ['pre_act_dtype', 'output_dtype', 'deltas_dtype',
-                              'weight_dtype', 'updates_dtype']:
-                setattr(self, some_type, np.float16)
+        self.backend_type = ensure_dtype(self.backend_type)  # string to dtype
+        logger.info("Setting layer dtype to" + str(self.backend_type))
+        for some_type in ['pre_act_dtype', 'output_dtype', 'deltas_dtype',
+                          'weight_dtype', 'updates_dtype']:
+            setattr(self, some_type, self.backend_type)
 
     def set_previous_layer(self, pl):
         if pl.is_local:
@@ -578,6 +579,9 @@ class WeightLayer(Layer):
                 param_dtype=dtype, gradient_dtype=dtype)
         elif lrule_init['type'] == 'adadelta':
             lr = AdaDelta(name=lrname, lr_params=lrule_init['lr_params'])
+        elif lrule_init['type'] == 'rmsprop':
+            lr = RMSProp(name=lrname, lr_params=lrule_init['lr_params'],
+                         param_dtype=dtype, gradient_dtype=dtype)
         else:
             raise AttributeError("invalid learning rule params specified")
         lr.initialize(self.backend)

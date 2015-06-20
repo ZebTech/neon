@@ -21,7 +21,7 @@ NervanaGPU is available at `<https://github.com/NervanaSystems/nervanagpu>`
 import logging
 
 from neon.backends.backend import Backend
-from nervanagpu import NervanaGPU, GPUTensor
+from nervanagpu import NervanaGPU
 from neon.diagnostics.timing_decorators import FlopsDecorator
 import pycuda.driver as drv
 import numpy as np
@@ -149,23 +149,21 @@ class GPU(Backend):
         return self.end.time_since(self.start)
 
     def uniform(self, low=0.0, high=1.0, shape=1, dtype=default_dtype,
-                name=None, allocator=drv.mem_alloc):
+                persist_values=True, name=None, allocator=drv.mem_alloc):
         """
         generate numpy random number and convert to a GPUTensor.
         If called with dype=None it will probably explode
         """
         ary = np.random.uniform(low, high, shape)
-        return GPUTensor(ary.shape, dtype, allocator=allocator, name=name,
-                         rounding=self.ng.round_mode).set(ary)
+        return self.ng.array(ary, dtype=dtype, name=name)
 
     def normal(self, loc=0.0, scale=1.0, size=1, dtype=default_dtype,
-               name=None, allocator=drv.mem_alloc):
+               persist_values=True, name=None, allocator=drv.mem_alloc):
         """
         Gaussian/Normal random number sample generation
         """
         ary = np.random.normal(loc, scale, size)
-        return GPUTensor(ary.shape, dtype, allocator=allocator, name=name,
-                         rounding=self.ng.round_mode).set(ary)
+        return self.ng.array(ary, dtype=dtype, name=name)
 
     def fprop_fc(self, out, inputs, weights, layer=None):
         """
@@ -432,6 +430,12 @@ class GPU(Backend):
         self.ng.maximum(x, 0., out=out)
         return out
 
+    def rectleaky(self, x, slope, out):
+        out[:] = self.ng.maximum(x, x*slope)
+
+    def rectleaky_derivative(self, x, slope, out):
+        out[:] = self.ng.greater(x, 0) * (1.0 - slope) + slope
+
     def sum(self, tsr, axes, out):
         """
         Sum
@@ -557,61 +561,88 @@ class GPU(Backend):
         self.ng.sqrt(x, out=out)
         return out
 
-    def zeros(self, shape, dtype=default_dtype):
+    def zeros(self, shape, dtype=default_dtype, persist_values=True):
         """
         Allocate a new GPUTensor and fill it with zeros.
 
         Arguments:
             shape (tupel): Shape of the desired GPUTensor
             dtype (dtype): Optional datatype
+            persist_values (bool, optional): If set to True (the default), the
+                                             values assigned to this Tensor
+                                             will persist across multiple begin
+                                             and end calls.  Setting to False
+                                             may provide a performance increase
+                                             if values do not need to be
+                                             maintained across such calls
 
         Returns:
             GPUTensor: output
         """
         return self.ng.zeros(shape, dtype=dtype)
 
-    def ones(self, shape, dtype=default_dtype):
+    def ones(self, shape, dtype=default_dtype, persist_values=True):
         """
         Allocate a new GPUTensor and fill it with ones.
 
         Arguments:
             shape (tupel): Shape of the desired GPUTensor
             dtype (dtype): Optional datatype
+            persist_values (bool, optional): If set to True (the default), the
+                                             values assigned to this Tensor
+                                             will persist across multiple begin
+                                             and end calls.  Setting to False
+                                             may provide a performance increase
+                                             if values do not need to be
+                                             maintained across such calls
 
         Returns:
             GPUTensor: output
         """
         return self.ng.ones(shape, dtype=dtype)
 
-    def empty(self, shape, dtype=default_dtype):
+    def empty(self, shape, dtype=default_dtype, persist_values=True):
         """
         Allocate a new GPUTensor.
 
         Arguments:
             shape (tupel): Shape of the desired GPUTensor
             dtype (dtype): Optional datatype
+            persist_values (bool, optional): If set to True (the default), the
+                                             values assigned to this Tensor
+                                             will persist across multiple begin
+                                             and end calls.  Setting to False
+                                             may provide a performance increase
+                                             if values do not need to be
+                                             maintained across such calls
 
         Returns:
             GPUTensor: output
         """
         return self.ng.empty(shape, dtype=dtype)
 
-    def array(self, ary, dtype=default_dtype, name=None,
+    def array(self, ary, dtype=default_dtype, persist_values=True, name=None,
               allocator=drv.mem_alloc):
         """
         Allocate a new GPUTensor and fill it with supplied numpy array.
 
         Arguments:
             ary (ndarray): Numpy array with source data
-            dtype (dtype): Optional datatype
+            dtype (dtype, optional): Optional datatype
+            persist_values (bool, optional): If set to True (the default), the
+                                             values assigned to this Tensor
+                                             will persist across multiple begin
+                                             and end calls.  Setting to False
+                                             may provide a performance increase
+                                             if values do not need to be
+                                             maintained across such calls
             name (string): Name for the GPUTensor
             allocator (pycuda): Pycuda memory allocator
 
         Returns:
             GPUTensor: output
         """
-        return GPUTensor(ary.shape, dtype, allocator=allocator, name=name,
-                         rounding=self.ng.round_mode).set(ary)
+        return self.ng.array(ary, dtype=dtype, name=name)
 
     def add(self, left, right, out):
         """
@@ -841,10 +872,8 @@ class GPU(Backend):
         Outputs are written to vs_item (updated velocity)
         and ps_item (updated weights)
         """
-        self.ng.subtract(self.ng.multiply(vs_item, momentum_coef),
-                         self.ng.multiply(us_item, learning_rate),
-                         out=vs_item)
-        self.ng.add(ps_item, vs_item, out=ps_item)
+        vs_item[:] = vs_item * momentum_coef - us_item * learning_rate
+        ps_item[:] = ps_item + vs_item
 
     def gdmwd_compound(self, ps_item, us_item, vs_item, momentum_coef,
                        learning_rate, wd, epoch):
@@ -865,16 +894,21 @@ class GPU(Backend):
             vs_item, the updated velocity.
             us_item, used as a temp buffer.
         """
-        self.ng.subtract(self.ng.multiply(vs_item, momentum_coef),
-                         self.ng.multiply(us_item, learning_rate),
-                         out=vs_item)
+        vs_item[:] = vs_item * momentum_coef - us_item * \
+            learning_rate - learning_rate * wd * ps_item
+        ps_item[:] = ps_item + vs_item
 
-        # weight decay
-        self.ng.multiply(self.ng.multiply(ps_item, wd),
-                         learning_rate, out=us_item)
-        self.ng.subtract(vs_item, us_item, out=vs_item)
+    def exp_mavg(self, mavg, newval, rho):
+        """
+        Calculate the exponential moving average
 
-        self.ng.add(ps_item, vs_item, out=ps_item)
+        Arguments:
+            mavg:  The running value of the moving average
+            newval:  New sample to be added to the moving average
+            rho:  Interpolation value
+        """
+
+        mavg[:] = rho * mavg + (1.0 - rho) * newval
 
     def ada_update(self, ps_item, us_item, gs_item, ds_item, ls_item, ss_item,
                    rho, epsilon):
@@ -904,7 +938,25 @@ class GPU(Backend):
         # Final update to the params
         ps_item[:] = ps_item + ls_item
 
-    def fprop_bn_compound(self, inputs, beta, gamma, eps, xvar, xhat, out):
+    def rms_update(self, params, updates, run_squares, velocity, scratch_space,
+                   gamma, epsilon, learning_rate, momentum_coef):
+
+        # Update running squares
+        run_squares[:] = gamma * run_squares + (1. - gamma) * updates * updates
+
+        # Now scale the gradient by lr / rms(grad) (with a epsilon term for
+        # stability) and use it to update the params
+        if momentum_coef == 0:
+            params[:] = params - learning_rate * updates * self.ng.reciprocal(
+                self.ng.sqrt(run_squares) + epsilon)
+        else:
+            velocity[:] = velocity * momentum_coef - \
+                learning_rate * updates * \
+                self.ng.reciprocal(self.ng.sqrt(run_squares) + epsilon)
+            params[:] = params + velocity
+
+    def fprop_bn_compound(self, inputs, beta, gamma, eps, xhat,
+                          xmean, xvar, gmean, gvar, rho, out):
         """
         Batch normalization forward pass, compounded to run in 3 kernel calls.
 
@@ -917,9 +969,13 @@ class GPU(Backend):
             xhat: normalized input (updated)
             out: normalized and rescaled input (updated)
         """
-        xvar[:] = self.ng.reciprocal(self.ng.sqrt(self.ng.var(inputs, axis=1) +
-                                                  eps))
-        xhat[:] = xvar * (inputs - self.ng.mean(inputs, axis=1))
+        xvar[:] = self.ng.var(inputs, axis=1)
+        xmean[:] = self.ng.mean(inputs, axis=1)
+        gmean[:] = gmean * rho + (1.0 - rho) * xmean
+        gvar[:] = gvar * rho + (1.0 - rho) * xvar
+
+        xvar[:] = self.ng.reciprocal(self.ng.sqrt(xvar + eps))
+        xhat[:] = xvar * (inputs - xmean)
         out[:] = xhat * gamma + beta
         return out
 

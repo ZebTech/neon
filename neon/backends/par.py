@@ -32,8 +32,8 @@ class NoPar(object):
         backend.par = self
         self.backend = backend
 
-    def distribute(self, batchdata):
-        return self.backend.array(batchdata)
+    def distribute(self, batchdata, dtype):
+        return self.backend.array(batchdata, dtype)
 
     def reduce_tensor(self, tensor):
         return tensor.asnumpyarray()
@@ -119,7 +119,7 @@ class ModelPar(BasePar):
             conf = ModelPar.Config()
             nout = layer.nout
             realnin = layer.nin
-            nin = realnin / self.mpi_size
+            nin = realnin // self.mpi_size
             conf.start = self.mpi_rank * nin
             if self.mpi_rank == (self.mpi_size - 1):
                 # If the weights cannot be evenly partitioned, let the last
@@ -152,8 +152,8 @@ class ModelPar(BasePar):
         backend.bprop_fc = self.bprop_fc
         backend.update_fc = self.update_fc
 
-    def distribute(self, batchdata):
-        return self.backend.array(batchdata)
+    def distribute(self, batchdata, dtype):
+        return self.backend.array(batchdata, dtype)
 
     def reduce_tensor(self, tensor):
         return tensor.asnumpyarray()
@@ -196,7 +196,7 @@ class DataPar(BasePar):
 
     def init_model(self, model, backend):
         super(DataPar, self).init_model(model, backend)
-        self.batch_size = backend.actual_batch_size / self.mpi_size
+        self.batch_size = backend.actual_batch_size // self.mpi_size
         self.start = self.mpi_rank * self.batch_size
         if self.mpi_rank == (self.mpi_size - 1):
             self.batch_size = backend.actual_batch_size - self.start
@@ -219,8 +219,8 @@ class DataPar(BasePar):
         backend.update_fc = self.update_fc
         backend.update_conv = self.update_conv
 
-    def distribute(self, batchdata):
-        return self.backend.array(batchdata[:, self.start:self.end])
+    def distribute(self, batchdata, dtype):
+        return self.backend.array(batchdata[:, self.start:self.end], dtype)
 
     def reduce_tensor(self, tensor):
         self.comm.Reduce([tensor.asnumpyarray(), self.mpi.FLOAT],

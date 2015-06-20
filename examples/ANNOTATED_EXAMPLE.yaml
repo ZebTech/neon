@@ -82,7 +82,7 @@
   #               SparseEigenValGen - Each weight has a configurable number of
   #                                   nonzero inputs and these weights are
   #                                   uniformly randomly initialized followed
-  #                                   by a scaling based on the maximum 
+  #                                   by a scaling based on the maximum
   #                                   eigenvalues found.  See Sutskever2013 for
   #                                   details.
   #               GaussianValGen or NormalValGen - normal distribution
@@ -146,7 +146,7 @@
     repo_path: '~/data',
     sample_pct: 100,
   },
-  
+
   metrics: {
     # Metric objects
     # --------------
@@ -195,12 +195,11 @@
     #   learning_rate - fraction of backpropagated gradient values to
     #                   add to this layers weights during each update
     #                   (should be <= 1.0)
-    #   backend - backend to use to store data constructed for these
-    #             layer updates
     #   momentum_params - dictionary containing several parameters that
     #                     can be used to adjust the learning rate over
     #                     time based on the curvature of gradient
-    #                     directions.  These parameters are:
+    #                     directions.  Omission of the momentum_params dict
+    #                     will use no momentum.  The dict parameters are:
     #     type - should be one of: constant, linear_monotone, nesterov
     #     initial_coef - initial momentum coefficient value.  0 disables
     #                    momentum, but a positive value gives portion of
@@ -225,6 +224,32 @@
     },
   },
 
+  lrule: &rms {
+    # rmsprop parameters
+    # ------------------------------------
+    # type - set this to rmsprop
+    # lr_params - parameters associated with this type of learning rate. types:
+    #   learning_rate - Suggested value for learning rate is 0.001
+    #   gamma - exponential decay for tracking the squared gradient over time
+    #           default is 0.9
+    #   epsilon - value added to denominator term for numerical stability
+    #             default is 1e-6
+    #   momentum_params - dictionary containing several parameters that
+    #                     can be used to adjust the learning rate over
+    #                     time based on the curvature of gradient
+    #                     directions.  See the gradient_descent_momentum info
+    type: rmsprop,
+    lr_params: {
+      learning_rate: 0.001,
+      gamma: 0.9,
+      epsilon: 0.000001,
+      momentum_params: {
+        type: constant,
+        coef: 0,
+      },
+    },
+  },
+
   model: !obj:models.MLP {
     # MLP model parameters
     # --------------------
@@ -235,15 +260,20 @@
     # serialized_path - the full location and name to a serialized .prm file
     #                   that we will use to cache this model.  Speeds up
     #                   subsequent use of this model for inference purposes.
-    # deserialize_path - the full location and name to deserialize a .prm file from
-    #                   that we will use to initialize this model. Defaults to
-    #                   serialized_path if deserialize_path doesn't exist
+    # deserialize_path - the full location and name to deserialize a .prm file
+    #                    from that we will use to initialize this model.
+    #                    Defaults to serialized_path if deserialize_path
+    #                    doesn't exist
+    # serialize_schedule - either an int specifying the epoch interval at
+    #                      at which to save snapshots of the model, or a list
+    #                      of ints specifying the epochs at which to save.
     # layers - list of neural network layer objects.  Models will typically
     #          have a single DataLayer, followed by 1 or more hidden layers,
     #          then a final CostLayer.
     num_epochs: 25,
     batch_size: &bs 30,
     serialized_path: './iris-mlp-simple.prm',
+    serialize_schedule: [3, 10, 20],
     layers: [
       &datalayer !obj:layers.DataLayer {
         # DataLayer parameters
