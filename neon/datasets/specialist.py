@@ -272,9 +272,8 @@ class SpecialistDataset(Dataset):
         self.dataset.load(backend, experiment)
         train_probs, test_probs = load_inferences(
             path=self.inferences_path, name=self.experiment)
-        train_targets, test_targets = load_inferences(
+        train_targets, test_targets = load_targets(
             path=self.inferences_path, name=self.experiment)
-        test_targets = np.argmax(test_targets, axis=1)
         cluster = SpecialistDataset.cluster_classes(test_targets, test_probs,
                                                     cm=self.confusion_matrix,
                                                     nb_clusters=self.nb_clusters,
