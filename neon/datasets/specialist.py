@@ -274,6 +274,7 @@ class SpecialistDataset(Dataset):
             path=self.inferences_path, name=self.experiment)
         train_targets, test_targets = load_targets(
             path=self.inferences_path, name=self.experiment)
+        #: TODO: Change test_* to validation set. (Necessary !)
         cluster = SpecialistDataset.cluster_classes(test_targets, test_probs,
                                                     cm=self.confusion_matrix,
                                                     nb_clusters=self.nb_clusters,
