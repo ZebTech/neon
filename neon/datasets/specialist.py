@@ -303,7 +303,7 @@ class SpecialistDataset(Dataset):
             for i, t in izip(bi, bt):
                 if np.argmax(t) in cluster or self.full_predictions:
                     clss = np.argmax(t)
-                    clss = cluster.index(clss)
+                    clss = cluster.index(clss) if clss in cluster else 0
                     new_inputs.append(i)
                     new_targets.append(to_one_hot(clss, n_classes))
         self.dataset.inputs['test'] = np.array(new_inputs)
