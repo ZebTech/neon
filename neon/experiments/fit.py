@@ -50,6 +50,7 @@ class FitExperiment(Experiment):
         req_param(self, ['dataset', 'model'])
         opt_param(self, ['backend'])
         opt_param(self, ['live'], False)
+        opt_param(self, ['validation_split'], None)
         if self.backend is not None:
             self.initialize(self.backend)
 
@@ -71,6 +72,11 @@ class FitExperiment(Experiment):
         self.dataset.set_batch_size(self.model.batch_size)
         self.dataset.backend = self.backend
         self.dataset.load(backend=self.backend, experiment=self)
+        if self.validation_split:
+            if self.dataset.has_set('validation'):
+                logger.warning('Replacing validation set with train split')
+            self.dataset.split_set(
+                self.validation_split, 'validation', 'train')
         if hasattr(self.dataset, 'serialized_path') and (
                 self.dataset.serialized_path is not None):
             logger.warning('Ability to serialize dataset has been deprecated.')
