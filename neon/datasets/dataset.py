@@ -247,7 +247,7 @@ class Dataset(object):
         but they they should not exceed the given amount.
 
         Arguments:
-            amount (float): Fraction of original set to transfer to the new one.
+            amount (float): Fraction of original set to move to the new one.
                             Comprised in [0.0, 1.0].
             to_set (str): Name of the created set.
             from_set (str): From which set to get the batches to be transfered.
@@ -258,11 +258,12 @@ class Dataset(object):
         from_set_targets = self.targets[from_set]
         to_set_inputs = self.inputs[to_set]
         to_set_targets = self.targets[to_set]
-        nbatches = len(self.inputs[from_set])  # : Check if this is correct
-        ntransfered = floor(nbatches * amount)
+        nbatches = len(self.inputs[from_set])
+        ntransfered = int(floor(nbatches * amount))
         for i in range(ntransfered):
             batch = self.backend.uniform(
                 low=0, high=len(from_set_inputs), dtype=np.int32)
+            batch = batch.asnumpyarray()[0, 0]
             inputs = from_set_inputs.pop(batch)
             targets = from_set_targets.pop(batch)
             to_set_inputs.append(inputs)

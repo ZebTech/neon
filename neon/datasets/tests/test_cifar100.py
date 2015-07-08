@@ -52,7 +52,7 @@ class TestCIFAR100(object):
         par = NoPar()
         par.associate(data.backend)
         data.load()
-        expected_valid_split = floor(len(data.input['train']) * split)
+        expected_valid_split = floor(len(data.inputs['train']) * split)
         expected_train_split = len(data.inputs['train']) - expected_valid_split
         data.split_set(split)
         assert len(data.inputs['train']) == expected_train_split
@@ -62,14 +62,16 @@ class TestCIFAR100(object):
     def test_split_set_params(self):
         split = 0.2
         to_set = 'to_set'
+        from_set = 'train'
         data = CIFAR100(coarse=False, repo_path=self.tmp_repo)
         data.backend = CPU(rng_seed=0)
         data.backend.actual_batch_size = 128
         par = NoPar()
         par.associate(data.backend)
         data.load()
-        expected_valid_split = floor(len(data.input['train']) * split)
-        expected_train_split = len(data.inputs['train']) - expected_valid_split
-        data.split_set(split, to_set=to_set, from_set='train')
-        assert len(data.inputs['train']) == expected_train_split
+        expected_valid_split = floor(len(data.inputs[from_set]) * split)
+        expected_train_split = len(
+            data.inputs[from_set]) - expected_valid_split
+        data.split_set(split, to_set=to_set, from_set=from_set)
+        assert len(data.inputs[from_set]) == expected_train_split
         assert len(data.inputs[to_set]) == expected_valid_split

@@ -72,11 +72,12 @@ class FitExperiment(Experiment):
         self.dataset.set_batch_size(self.model.batch_size)
         self.dataset.backend = self.backend
         self.dataset.load(backend=self.backend, experiment=self)
+        # Creates a validation set from train if requested
         if self.validation_split:
             if self.dataset.has_set('validation'):
-                logger.warning('Replacing validation set with train split')
+                logger.warning('Replacing validation set with train split.')
             self.dataset.split_set(
-                self.validation_split, 'validation', 'train')
+                self.validation_split, to_set='validation', from_set='train')
         if hasattr(self.dataset, 'serialized_path') and (
                 self.dataset.serialized_path is not None):
             logger.warning('Ability to serialize dataset has been deprecated.')
