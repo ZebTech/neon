@@ -19,6 +19,7 @@ Generic Dataset interface.  Defines the operations any dataset should support.
 import logging
 import numpy as np
 import os
+from math import floor
 
 from neon.backends.cpu import CPU
 from neon.util.compat import PY3, range
@@ -238,6 +239,34 @@ class Dataset(object):
                 item = dataset[key]
                 if item is not None:
                     dataset[key] = self.transpose_batches(item, dtype)
+
+    def split_set(self, amount, to_set='validation', from_set='train'):
+        """
+        Splits amount percent of data from from_set into to_set. This is used
+        when creating a validation. Note that entire batches will be transfered
+        but they they should not exceed the given amount.
+
+        Arguments:
+            amount (float): Fraction of original set to transfer to the new one.
+                            Comprised in [0.0, 1.0].
+            to_set (str): Name of the created set.
+            from_set (str): From which set to get the batches to be transfered.
+        """
+        self.inputs[to_set] = []
+        self.targets[to_set] = []
+        from_set_inputs = self.inputs[from_set]
+        from_set_targets = self.targets[from_set]
+        to_set_inputs = self.inputs[to_set]
+        to_set_targets = self.targets[to_set]
+        nbatches = len(self.inputs[from_set])  # : Check if this is correct
+        ntransfered = floor(nbatches * amount)
+        for i in range(ntransfered):
+            batch = self.backend.uniform(
+                low=0, high=len(from_set_inputs), dtype=np.int32)
+            inputs = from_set_inputs.pop(batch)
+            targets = from_set_targets.pop(batch)
+            to_set_inputs.append(inputs)
+            to_set_targets.append(targets)
 
     def get_batch(self, data, batch):
         """
