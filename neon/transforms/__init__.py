@@ -14,6 +14,7 @@
 # ----------------------------------------------------------------------------
 
 # import shortcuts
+from neon.transforms.dqn_cost import DQNCost # noqa
 from neon.transforms.cross_entropy import CrossEntropy  # noqa
 from neon.transforms.linear import Linear  # noqa
 from neon.transforms.logistic import Logistic  # noqa
