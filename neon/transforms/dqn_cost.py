@@ -13,37 +13,74 @@
 # limitations under the License.
 # ----------------------------------------------------------------------------
 """
-Cross entropy transform functions and classes.
+Sum of squares transform functions and classes.
 """
 
+import numpy as np
 from neon.transforms.cost import Cost
-from neon.util.param import opt_param
+
+
+def sum_squared_diffs(backend, outputs, targets, temp,
+                      scale_by_batchsize=False):
+    """
+    Warning: This is not the DQN Implementation yet, but only the basic
+    SumSquaredDiff.
+
+    Evaluates sum of squared difference on pairwise elements from outputs and
+    targets.
+
+    Arguments:
+        backend (Backend): The backend class to use for computation.
+        outputs (array_like): predicted output values to be compared.
+        targets (array_like): known outcome values to be compared against.
+        temp (array_like): temporary buffers.
+
+    Returns:
+        scalar: Calculated sum of squared diff values for each element.
+    """
+    backend.subtract(outputs, targets, temp[0])
+    backend.multiply(temp[0], temp[0], temp[0])
+    if scale_by_batchsize:
+        backend.divide(temp[0], temp[0].shape[1], temp[0])
+    result = backend.empty((1, 1), dtype=outputs.dtype)
+    backend.sum(temp[0], axes=None, out=result)
+    return backend.multiply(result, 0.5, result)
+
+
+def sum_squared_diffs_derivative(backend, outputs, targets, temp, scale=1.0):
+    """
+    Applies derivative of the sum of squared differences to pairwise elements
+    from outputs and targets (with respect to the outputs), as specified in
+    the Playing Atari with Deep reinforcement Learning paper..
+
+    Arguments:
+        backend (Backend): The backend class to use for computation.
+        outputs (array_like): predicted output values to be compared.
+        targets (array_like): known outcome values to be compared against.
+        temp (array_like): temporary buffers.
+    """
+    actions = backend.zeros((1, targets.shape[1]), dtype=np.int32)
+    actions = backend.argmax(targets, axis=0, out=actions)
+    error = backend.zeros(outputs.shape)
+    place = backend.zeros((1, 1), dtype=np.int32)
+    diff = backend.zeros((1, 1))
+    for a in range(actions.shape[1]):
+        place = actions[0, a]
+        diff = backend.subtract(targets[place, a], outputs[place, a], diff)
+        error[place, a] = backend.multiply(diff, diff, diff)
+    temp[0] = error
+    backend.multiply(temp[0], scale, out=temp[0])
+    return temp[0]
 
 
 class DQNCost(Cost):
 
     """
-    Embodiment of a DQN cost function.
-
-    Warning: This is extremely experimental, and probably that a lot of
-    functionalities do not work.
-
-    TODO: Base it on SumSquaredDiff, to ensure compatibility.
+        Implementation of a DQN Reinforcement learning cost.
     """
 
     def __init__(self, **kwargs):
-        opt_param(self, ['epsilon'], 2 ** -23)
-        # default float32 machine epsilon
         super(DQNCost, self).__init__(**kwargs)
-
-    def initialize(self, kwargs):
-        opt_param(self, ['shortcut_deriv'], True)
-        # raw label indicates whether the reference labels are indexes (raw)
-        # or one-hot (default)
-        super(DQNCost, self).initialize(kwargs)
-
-    def __str__(self):
-        return ("Cost Function: DQNCost")
 
     def set_outputbuf(self, databuf):
         if not self.outputbuf or self.outputbuf.shape != databuf.shape:
@@ -52,15 +89,22 @@ class DQNCost(Cost):
         self.outputbuf = databuf
 
     def get_deltabuf(self):
-        # used by layer2 only.
         return self.temp[0]
 
     def apply_function(self, targets, scale_by_batchsize=False):
-        pass
+        """
+        Apply the sum of squared differences cost function to the datasets
+        passed.
+        """
+        result = sum_squared_diffs(self.backend, self.outputbuf, targets,
+                                   self.temp, scale_by_batchsize)
+        return self.backend.multiply(result, self.scale, result)
 
     def apply_derivative(self, targets):
-        self.temp[0] = self.backend.power(self.temp[0], 0.5, self.temp[0])
-        self.temp[0] = self.backend.multiply(self.temp[0], 2.0, self.temp[0])
-
-    def set_cost(self, cost):
-        self.temp[0] = cost
+        """
+        Apply the derivative of the sum of squared differences cost function
+        to the datasets passed.
+        """
+        return sum_squared_diffs_derivative(self.backend,
+                                            self.outputbuf, targets,
+                                            self.temp, self.scale)
