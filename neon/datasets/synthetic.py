@@ -60,7 +60,7 @@ class UniformRandom(Dataset):
             self.load_data((self.ntrain, self.nin)))
         self.inputs['test'], self.targets['test'] = (
             self.load_data((self.ntest, self.nin)))
-        if self.validation_pct:
+        if hasattr(self, 'validation_pct'):
             self.split_set(
                 self.validation_pct, from_set='train', to_set='validation')
         self.format()
@@ -143,7 +143,7 @@ class ToyImages(Dataset):
         self.targets['train'] = targets[inds[:self.ntrain]]
         self.inputs['test'] = data[inds[self.ntrain:]]
         self.targets['test'] = targets[inds[self.ntrain:]]
-        if self.validation_pct:
+        if hasattr(self, 'validation_pct'):
             self.split_set(
                 self.validation_pct, from_set='train', to_set='validation')
         self.format()
