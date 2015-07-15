@@ -129,15 +129,15 @@ class MLP(Model):
         logging.info("%s set misclass rate: %0.5f%%",
                      setname, 100. * misclassval)
 
-    def print_metric_score(self, dataset, setname, metric=None):
-        metric.clear()
-        metric_name = str(metric)
-        self.set_train_mode(False)
-        for outputs, targets in self.predict_generator(dataset, setname):
-            metric.add(outputs, targets)
-        self.set_train_mode(True)
-        logger.info('%s set %s %.5f', setname, metric_name, metric.report())
-        metric.clear()
+    def print_metric_score(self, dataset, setname, metric):
+        if dataset.has_set(setname):
+            metric.clear()
+            metric_name = str(metric)
+            for outputs, targets in self.predict_generator(dataset, setname):
+                metric.add(outputs, targets)
+            self.set_train_mode(True)
+            logger.info('%s set %s %.5f', setname, metric_name, metric.report())
+            metric.clear()
 
     def fit(self, dataset):
         """
@@ -166,14 +166,14 @@ class MLP(Model):
                 if self.step_print > 0 and mb_id % self.step_print == 0:
                     self.print_training_error(self.cost_layer.get_cost(),
                                               mb_id, partial=True)
-                    if self.validation_metric is not None:
-                        self.print_metric_score(dataset, setname='validation',
-                                                metric=self.validation_metric)
                 self.backend.add(error, self.cost_layer.get_cost(), error)
                 self.backend.end(Block.minibatch, mb_id)
                 mb_id += 1
             self.epochs_complete += 1
             self.print_training_error(error, self.data_layer.num_batches)
+            if self.validation_metric is not None:
+                self.print_metric_score(dataset, setname='validation',
+                                        metric=self.validation_metric)
             self.print_layers(debug=True)
             self.backend.end(Block.epoch, self.epochs_complete - 1)
             self.save_snapshot()
