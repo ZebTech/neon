@@ -282,6 +282,7 @@ class Dataset(object):
             from_set (str): Where the data will be transfered from.
             to_set (str): The set to be created with the transfered data.
         """
+        np.random.seed(self.backend.rng_seed)
         to_set_inputs = []
         to_set_targets = []
         pct /= 100.0
