@@ -139,7 +139,8 @@ class MLP(Model):
             for outputs, targets in self.predict_generator(dataset, setname):
                 metric.add(outputs, targets)
             self.set_train_mode(True)
-            logger.info('%s set %s %.5f', setname, metric_name, metric.report())
+            logger.info(
+                '%s set %s %.5f', setname, metric_name, metric.report())
             metric.clear()
 
     def fit(self, dataset):
