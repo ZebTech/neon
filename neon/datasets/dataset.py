@@ -20,7 +20,6 @@ import logging
 import numpy as np
 import os
 from math import floor
-from random import randint
 
 from neon.backends.cpu import CPU
 from neon.util.compat import PY3, range
@@ -279,7 +278,7 @@ class Dataset(object):
         to_set.
 
         Arguments:
-            pct (float): The percentage of data to transfer, in [0 - 100].
+            pct (float): The percentage of data to transfer, in [0, 100].
             from_set (str): Where the data will be transfered from.
             to_set (str): The set to be created with the transfered data.
         """
@@ -288,7 +287,7 @@ class Dataset(object):
         pct /= 100.0
         nb_transfered = int(floor(pct * len(self.inputs[from_set])))
         for _ in range(nb_transfered):
-            idx = randint(0, self.inputs[from_set].shape[0] - 1)
+            idx = np.random.randint(0, self.inputs[from_set].shape[0])
             data = self.inputs[from_set][idx]
             target = self.targets[from_set][idx]
             to_set_inputs.append(data)

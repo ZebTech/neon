@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from math import ceil
+from math import floor
 from nose.plugins.attrib import attr
 
 from neon.datasets.synthetic import UniformRandom, ToyImages
@@ -24,8 +24,8 @@ class TestValidationUniformRandom(object):
         data.load()
         split /= 100.0
         nb_batches = ntrain // batch_size
-        expected_nb_train = ceil((1.0 - split) * nb_batches)
-        expected_nb_valid = nb_batches - expected_nb_train
+        expected_nb_train = floor((1.0 - split) * nb_batches)
+        expected_nb_valid = floor(split * nb_batches)
         assert expected_nb_train == len(data.inputs['train'])
         assert expected_nb_train == len(data.targets['train'])
         assert expected_nb_valid == len(data.inputs['validation'])
@@ -43,8 +43,11 @@ class TestValidationUniformRandom(object):
         data.load()
         split /= 100.0
         nb_batches = ntrain // batch_size
-        expected_nb_train = ceil((1.0 - split) * nb_batches)
-        expected_nb_valid = nb_batches - expected_nb_train
+        expected_nb_train = floor((1.0 - split) * nb_batches)
+        expected_nb_valid = floor(split * nb_batches)
+        """
+        HERE there's a problem... Probably for
+        """
         assert expected_nb_train == len(data.inputs['train'])
         assert expected_nb_train == len(data.targets['train'])
         assert expected_nb_valid == len(data.inputs['validation'])
@@ -63,11 +66,11 @@ class TestValidationToyImages(object):
         par = NoPar()
         par.associate(data.backend)
         data.load()
-        ntrain = sum(a.shape[1] for a in data.inputs['train'])
+        ntrain = data.ntrain
         split /= 100.0
         nb_batches = ntrain // batch_size
-        expected_nb_train = ceil((1.0 - split) * nb_batches)
-        expected_nb_valid = nb_batches - expected_nb_train
+        expected_nb_train = floor((1.0 - split) * nb_batches)
+        expected_nb_valid = floor(split * nb_batches)
         assert expected_nb_train == len(data.inputs['train'])
         assert expected_nb_train == len(data.targets['train'])
         assert expected_nb_valid == len(data.inputs['validation'])
@@ -82,17 +85,12 @@ class TestValidationToyImages(object):
         par = NoPar()
         par.associate(data.backend)
         data.load()
-        ntrain = sum(a.shape[1] for a in data.inputs['train'])
+        ntrain = data.ntrain
         split /= 100.0
         nb_batches = ntrain // batch_size
-        expected_nb_train = ceil((1.0 - split) * nb_batches)
-        expected_nb_valid = nb_batches - expected_nb_train
+        expected_nb_train = floor((1.0 - split) * nb_batches)
+        expected_nb_valid = floor(split * nb_batches)
         assert expected_nb_train == len(data.inputs['train'])
         assert expected_nb_train == len(data.targets['train'])
         assert expected_nb_valid == len(data.inputs['validation'])
         assert expected_nb_valid == len(data.targets['validation'])
-
-if __name__ == '__main__':
-    test = TestValidationToyImages()
-    test.test_split()
-    test.test_round_split()
