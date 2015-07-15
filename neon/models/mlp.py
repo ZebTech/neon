@@ -130,6 +130,9 @@ class MLP(Model):
                      setname, 100. * misclassval)
 
     def print_metric_score(self, dataset, setname, metric):
+        """
+        Prints the metric score of this model on the specified dataset.
+        """
         if dataset.has_set(setname):
             metric.clear()
             metric_name = str(metric)
