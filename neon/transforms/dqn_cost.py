@@ -98,7 +98,6 @@ class DQNCost(Cost):
         self.__dict__.update(kwargs)
         super(DQNCost, self).__init__(**kwargs)
         opt_param(self, ['clamping'], False)
-        self.clamping = self.backend.array(self.clamping)
 
     def set_outputbuf(self, databuf):
         if not self.outputbuf or self.outputbuf.shape != databuf.shape:
