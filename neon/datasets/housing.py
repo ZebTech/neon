@@ -118,7 +118,7 @@ class Housing(Dataset):
                 self.sample_training_data()
             if hasattr(self, 'validation_pct'):
                 self.split_set(
-                    self.validation_pct, from_set='train', to_set='test')
+                    self.validation_pct, from_set='train', to_set='validation')
             self.format()
         else:
             raise AttributeError('repo_path not specified in config')

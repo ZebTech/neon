@@ -122,7 +122,7 @@ class SPARSENET(Dataset):
                     logger.error('problems loading: %s', name)
             if hasattr(self, 'validation_pct'):
                 self.split_set(
-                    self.validation_pct, from_set='train', to_set='test')
+                    self.validation_pct, from_set='train', to_set='validation')
             self.format()
         else:
             raise AttributeError('repo_path not specified in config')
