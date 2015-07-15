@@ -19,6 +19,8 @@ Generic Dataset interface.  Defines the operations any dataset should support.
 import logging
 import numpy as np
 import os
+from math import floor
+from random import randint
 
 from neon.backends.cpu import CPU
 from neon.util.compat import PY3, range
@@ -270,6 +272,33 @@ class Dataset(object):
         inputs_dic = self.get_inputs(train=True, validation=True,
                                      test=True)
         return True if (setname in inputs_dic) else False
+
+    def split_set(self, pct, from_set='train', to_set='validation'):
+        """
+        Splits the specified percentage amount of from_set and places it into
+        to_set.
+
+        Arguments:
+            pct (float): The percentage of data to transfer, in [0 - 100].
+            from_set (str): Where the data will be transfered from.
+            to_set (str): The set to be created with the transfered data.
+        """
+        to_set_inputs = []
+        to_set_targets = []
+        pct /= 100.0
+        nb_transfered = int(floor(pct * len(self.inputs[from_set])))
+        for _ in range(nb_transfered):
+            idx = randint(0, self.inputs[from_set].shape[0] - 1)
+            data = self.inputs[from_set][idx]
+            target = self.targets[from_set][idx]
+            to_set_inputs.append(data)
+            to_set_targets.append(target)
+            self.inputs[from_set] = np.delete(
+                self.inputs[from_set], idx, axis=0)
+            self.targets[from_set] = np.delete(
+                self.targets[from_set], idx, axis=0)
+        self.inputs[to_set] = np.array(to_set_inputs)
+        self.targets[to_set] = np.array(to_set_targets)
 
     def init_mini_batch_producer(self, batch_size, setname, predict):
         """
