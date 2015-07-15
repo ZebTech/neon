@@ -19,7 +19,6 @@ Generic Dataset interface.  Defines the operations any dataset should support.
 import logging
 import numpy as np
 import os
-from math import floor
 
 from neon.backends.cpu import CPU
 from neon.util.compat import PY3, range
@@ -282,23 +281,17 @@ class Dataset(object):
             from_set (str): Where the data will be transfered from.
             to_set (str): The set to be created with the transfered data.
         """
-        np.random.seed(self.backend.rng_seed)
-        to_set_inputs = []
-        to_set_targets = []
-        pct /= 100.0
-        nb_transfered = int(floor(pct * len(self.inputs[from_set])))
-        for _ in range(nb_transfered):
-            idx = np.random.randint(0, self.inputs[from_set].shape[0])
-            data = self.inputs[from_set][idx]
-            target = self.targets[from_set][idx]
-            to_set_inputs.append(data)
-            to_set_targets.append(target)
-            self.inputs[from_set] = np.delete(
-                self.inputs[from_set], idx, axis=0)
-            self.targets[from_set] = np.delete(
-                self.targets[from_set], idx, axis=0)
-        self.inputs[to_set] = np.array(to_set_inputs)
-        self.targets[to_set] = np.array(to_set_targets)
+        if pct != 0:
+            from_idcs = np.arange(self.inputs[from_set].shape[0])
+            nto_actual = (self.inputs[from_set].shape[0] * int(pct) / 100)
+            np.random.seed(self.backend.rng_seed)
+            np.random.shuffle(from_idcs)
+            to_idcs = from_idcs[0:nto_actual]
+            from_idcs = from_idcs[nto_actual:]
+            self.inputs[to_set] = self.inputs[from_set][to_idcs]
+            self.targets[to_set] = self.targets[from_set][to_idcs]
+            self.inputs[from_set] = self.inputs[from_set][from_idcs]
+            self.targets[from_set] = self.targets[from_set][from_idcs]
 
     def init_mini_batch_producer(self, batch_size, setname, predict):
         """
