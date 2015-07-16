@@ -20,6 +20,7 @@
   dataset: &ds !obj:datasets.MNIST {
     repo_path: '~/data',
     sample_pct: 100,
+    validation_pct: 20,
   },
 
   metrics: {
@@ -67,6 +68,7 @@
   model: !obj:models.MLP {
     num_epochs: 10,
     batch_size: &bs 128,
+    validation_metric: !obj:metrics.MisclassPercentage {},
     layers: [
       &datalayer !obj:layers.DataLayer {
         name: d0,
