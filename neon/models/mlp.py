@@ -134,6 +134,7 @@ class MLP(Model):
         Prints the metric score of this model on the specified dataset.
         """
         if dataset.has_set(setname):
+            self.set_train_mode(False)
             metric.clear()
             metric_name = str(metric)
             for outputs, targets in self.predict_generator(dataset, setname):
