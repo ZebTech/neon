@@ -40,7 +40,7 @@ class MLP(Model):
         opt_param(self, ['reuse_deltas'], True)
         opt_param(self, ['timing_plots'], False)
         opt_param(self, ['serialize_schedule'])
-        opt_param(self, ['validation_metric'], None)
+        opt_param(self, ['epoch_metrics'], None)
 
     def link(self, initlayer=None):
         pass
@@ -187,9 +187,9 @@ class MLP(Model):
                 mb_id += 1
             self.epochs_complete += 1
             self.print_training_error(error, self.data_layer.num_batches)
-            if self.validation_metric is not None:
+            if self.epoch_metrics is not None:
                 self.print_metric_score(dataset, setname='validation',
-                                        metric=self.validation_metric)
+                                        metric=self.epoch_metrics)
             self.print_layers(debug=True)
             self.backend.end(Block.epoch, self.epochs_complete - 1)
             self.save_snapshot()
