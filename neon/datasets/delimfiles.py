@@ -25,7 +25,6 @@ import numpy as np
 import os
 
 from neon.datasets.dataset import Dataset
-from neon.ipc.shmem import Server
 from neon.util.compat import pickle
 from neon.util.param import opt_param
 
@@ -85,6 +84,7 @@ class DelimFiles(Dataset):
                                   dtype=self.input_dtype)
 
         if self.live:
+            from neon.ipc.shmem import Server
             self.predict = True
             req_size = (np.dtype(self.input_dtype).itemsize * self.batch_size *
                         self.item_size)
@@ -113,7 +113,9 @@ class DelimFiles(Dataset):
         assert self.server is not None
         data, header = self.server.receive()
         self.batchdata[:, 0] = data.view(self.input_dtype)
-        dbatchdata = self.backend.distribute(self.batchdata, self.input_dtype)
+        dbatchdata = self.backend.allocate_fragment(self.batchdata.shape,
+                                                    self.input_data)
+        self.backend.set(dbatchdata, self.batchdata)
         return dbatchdata, None
 
     def read_batch(self, batch_idx):
