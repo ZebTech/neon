@@ -68,6 +68,18 @@
   model: !obj:models.MLP {
     num_epochs: 10,
     batch_size: &bs 128,
+    epoch_metrics: {
+        train: [
+            !obj:metrics.MisclassPercentage {},
+        ],
+        test: [
+            !obj:metrics.MisclassPercentage {},
+        ],
+        validation: [
+            !obj:metrics.MisclassPercentage {},
+            !obj:metrics.LogLossSum {},
+        ],
+    },
     layers: [
       &datalayer !obj:layers.DataLayer {
         name: d0,

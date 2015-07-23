@@ -186,10 +186,18 @@ class MLP(Model):
                 self.backend.end(Block.minibatch, mb_id)
                 mb_id += 1
             self.epochs_complete += 1
-            self.print_training_error(error, self.data_layer.num_batches)
-            if self.epoch_metrics is not None:
-                self.print_metric_score(dataset, setname='validation',
-                                        metric=self.epoch_metrics)
+            if isinstance(self.epoch_metrics, dict):
+                logger.info('Epoch %s metrics report:' %
+                            (self.epochs_complete))
+                for setname in self.epoch_metrics.keys():
+                    for metric in self.epoch_metrics[setname]:
+                        self.print_metric_score(
+                            dataset=dataset,
+                            setname=setname,
+                            metric=metric
+                        )
+            else:
+                self.print_training_error(error, self.data_layer.num_batches)
             self.print_layers(debug=True)
             self.backend.end(Block.epoch, self.epochs_complete - 1)
             self.save_snapshot()
