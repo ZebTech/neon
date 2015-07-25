@@ -136,21 +136,25 @@ class MLP(Model):
         logging.info("%s set misclass rate: %0.5f%%",
                      setname, 100. * misclassval)
 
-    def print_metric_score(self, dataset, setname, metric):
+    def print_metric_score(self, dataset, setname, metrics):
         """
-        Prints the metric score of this model on the specified dataset.
+        Prints the metric scores of this model on the specified dataset.
         """
         if dataset.has_set(setname):
             self.set_train_mode(False)
-            metric.clear()
-            metric_name = str(metric)
+            for metric in metrics:
+                metric.clear()
             for outputs, targets in self.predict_generator(dataset, setname):
-                metric.add(outputs, targets)
+                for metric in metrics:
+                    metric.add(outputs, targets)
             self.set_train_mode(True)
             self.data_layer.use_set('train', predict=False)
-            logger.info(
-                '%s set %s %.5f', setname, metric_name, metric.report())
-            metric.clear()
+            for metric in metrics:
+                metric_name = str(metric)
+                logger.info(
+                    '%s set %s %.5f', setname, metric_name, metric.report())
+            for metric in metrics:
+                metric.clear()
 
     def fit(self, dataset):
         """
@@ -190,12 +194,11 @@ class MLP(Model):
                 logger.info('Epoch %s metrics report:' %
                             (self.epochs_complete))
                 for setname in self.epoch_metrics.keys():
-                    for metric in self.epoch_metrics[setname]:
-                        self.print_metric_score(
-                            dataset=dataset,
-                            setname=setname,
-                            metric=metric
-                        )
+                    self.print_metric_score(
+                        dataset=dataset,
+                        setname=setname,
+                        metrics=self.epoch_metrics[setname]
+                    )
             else:
                 self.print_training_error(error, self.data_layer.num_batches)
             self.print_layers(debug=True)
