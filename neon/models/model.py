@@ -116,7 +116,8 @@ class Model(NervanaObject):
         config_string = config_string + "\n"
         print config_string
 
-    def fit(self, dataset, cost, optimizer, num_epochs, callbacks):
+    def fit(self, dataset, cost, optimizer, num_epochs, callbacks,
+            print_model=True):
         """
         Trains the model parameters on a dataset by minimizing the cost function through
         gradient descent and updates the layer weights according to a learning rule
@@ -132,10 +133,12 @@ class Model(NervanaObject):
                 on the output of the last layer and the input labels
             optimizer (Optimizer): Defines the learning rule for updating the model parameters
             num_epochs: Number of times to iterate over the dataset.
+            print_model: Whether to print the model definition or not.
         """
         self.cost = cost
         self.initialize(dataset, cost)
-        self.print_layers()
+        if print_model:
+            self.print_layers()
         self.set_shortcut()  # infer if bprop shortcut can be used
         self.optimizer = optimizer
         self.total_cost = self.be.empty((1, 1))
